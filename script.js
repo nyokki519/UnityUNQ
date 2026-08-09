@@ -1,50 +1,17 @@
 /* ==========================================================================
-   Unity イベントアンケート — script.js
-   ==========================================================================
-   ★★★ 設定はここだけ変更すればOKです（初心者向け） ★★★
+   Unity イベントアンケート — script.js（Googleフォーム連携・完成版）
    ========================================================================== */
 
 const CONFIG = {
-
-  // 送信方式を選択してください： "form"（Googleフォーム経由） / "gas"（GAS Webアプリ経由）
-  // ・"form" … 一番手軽。Googleフォームを1つ作るだけで、回答は自動的に
-  //            そのフォームに紐づくスプレッドシートに溜まります。
-  // ・"gas"  … Googleフォームを使わず、Apps Script経由で直接スプレッド
-  //            シートに書き込みたい場合はこちら（下部の解説参照）。
-  SUBMIT_METHOD: "form",
-
-  // ---- "form" を使う場合の設定 -------------------------------------------
-  // 1. Googleフォームを新規作成し、質問を5つ用意する（種類は何でもOK。
-  //    回答欄のIDだけ使うので見た目は使いません）
-  // 2. フォームの「送信」ボタンを右クリック→「検証」、または
-  //    プレビュー画面のHTMLソースを表示して、各質問の
-  //    name="entry.XXXXXXXXX" の数字部分を調べる
-  //    （一番簡単なのは、フォームを一度提出してみて、ブラウザの
-  //     開発者ツール(Network)で送信されたパラメータ名を見る方法です）
-  // 3. フォームの「…」メニュー→「事前入力したURLを取得」でも
-  //    entry番号を確認できます
-  // 4. 下記の GOOGLE_FORM_ACTION_URL は、フォームURLの末尾
-  //    「viewform」を「formResponse」に変えたものです
-  GOOGLE_FORM_ACTION_URL: "https://docs.google.com/forms/d/e/YOUR_FORM_ID_HERE/formResponse",
+  GOOGLE_FORM_ACTION_URL: "https://docs.google.com/forms/d/e/1FAIpQLSdGJYCsiK7BvL0WdmQLZ4GWwv121g6UvAB5nGTCeAC4L6Msbg/formResponse",
 
   ENTRY_IDS: {
-    satisfaction:  "entry.111111111", // Q1 満足度（星の数 1〜5が文字列で送信されます）
-    goodPoints:    "entry.222222222", // Q2 良かったところ（複数選択・チェックボックス質問推奨）
-    reason:        "entry.333333333", // Q3 参加理由（複数選択・チェックボックス質問推奨）
-    futureEvents:  "entry.444444444", // Q4 やってほしいイベント（複数選択・チェックボックス質問推奨）
-    freeText:      "entry.555555555"  // Q5 自由記述
+    satisfaction:  "entry.981625418",   // Q1 満足度
+    goodPoints:    "entry.843466021",   // Q2 良かったところ（複数選択）
+    reason:        "entry.616791735",   // Q3 参加した理由（複数選択）
+    futureEvents:  "entry.768694423",   // Q4 今後やってほしいイベント（複数選択）
+    freeText:      "entry.1967207820"   // Q5 自由記述
   },
-
-  // ---- "gas" を使う場合の設定 ---------------------------------------------
-  // Google Apps Script を使ってスプレッドシートに直接保存する方式です。
-  // 1. 保存したいGoogleスプレッドシートを開く
-  // 2.「拡張機能」→「Apps Script」を開き、このファイル末尾のコメントにある
-  //    サンプルコードを貼り付けて保存
-  // 3.「デプロイ」→「新しいデプロイ」→ 種類「ウェブアプリ」を選択
-  //    - 実行するユーザー：自分
-  //    - アクセスできるユーザー：全員
-  // 4. 発行されたウェブアプリのURLを下記に貼り付ける
-  GAS_WEB_APP_URL: "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID_HERE/exec",
 
   // 送信後、成功したとみなすまでの待機時間（ミリ秒）
   // ※ Googleフォームへのiframe送信はレスポンス内容を読み取れない仕様のため、
@@ -122,7 +89,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   btnStart.addEventListener("click", () => {
     showScreen(screenSurvey);
-    renderQuestion(0, "in");
+    renderQuestion(0);
   });
 
   /* ---------------------------------------------------------------------
@@ -297,7 +264,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ---------------------------------------------------------------------
-     Submission — 二重送信防止 + 方式振り分け
+     Submission — 二重送信防止 + Googleフォームへ hidden iframe 経由でPOST
+     （表側は完全オリジナルUIのまま、Googleフォーム画面は一切表示されません）
   --------------------------------------------------------------------- */
   function submitSurvey() {
     if (state.isSubmitting) return; // 二重送信防止
@@ -312,11 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnBack.classList.add("is-hidden");
     setOverlay(true, "送信しています…");
 
-    if (CONFIG.SUBMIT_METHOD === "gas") {
-      submitViaGAS();
-    } else {
-      submitViaGoogleForm();
-    }
+    submitViaGoogleForm();
   }
 
   function onSubmitSuccess() {
@@ -334,7 +298,6 @@ document.addEventListener("DOMContentLoaded", () => {
     showToast("送信に失敗しました。お手数ですが、もう一度お試しください。");
   }
 
-  // -- 方式A: Googleフォームへ hidden iframe 経由でPOST（表側は完全オリジナルUI） --
   function submitViaGoogleForm() {
     try {
       const form = document.createElement("form");
@@ -383,63 +346,4 @@ document.addEventListener("DOMContentLoaded", () => {
     form.appendChild(input);
   }
 
-  // -- 方式B: GAS Webアプリへ fetch でPOST -----------------------------------
-  function submitViaGAS() {
-    const payload = {
-      satisfaction: state.answers.satisfaction,
-      goodPoints: state.answers.goodPoints,
-      reason: state.answers.reason,
-      futureEvents: state.answers.futureEvents,
-      freeText: state.answers.freeText,
-      submittedAt: new Date().toISOString()
-    };
-
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), CONFIG.SUBMIT_TIMEOUT_MS + 4000);
-
-    fetch(CONFIG.GAS_WEB_APP_URL, {
-      method: "POST",
-      mode: "no-cors", // GAS Webアプリはno-corsで送るのが最も確実（レスポンスは読めないが到達は可能）
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    })
-      .then(() => {
-        clearTimeout(timer);
-        onSubmitSuccess();
-      })
-      .catch(err => {
-        clearTimeout(timer);
-        console.error("Unity survey GAS submit error:", err);
-        onSubmitError();
-      });
-  }
-
 });
-
-/* ==========================================================================
-   参考: GAS（Google Apps Script）でスプレッドシートに保存する場合のコード例
-   ==========================================================================
-   スプレッドシートの「拡張機能」→「Apps Script」に以下を貼り付けてデプロイ
-   （SUBMIT_METHOD を "gas" にした場合のみ必要です）
-   --------------------------------------------------------------------------
-
-function doPost(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("回答");
-  var data = JSON.parse(e.postData.contents);
-
-  sheet.appendRow([
-    new Date(),
-    data.satisfaction,
-    (data.goodPoints || []).join(", "),
-    (data.reason || []).join(", "),
-    (data.futureEvents || []).join(", "),
-    data.freeText || ""
-  ]);
-
-  return ContentService.createTextOutput(
-    JSON.stringify({ result: "success" })
-  ).setMimeType(ContentService.MimeType.JSON);
-}
-
-   -------------------------------------------------------------------------- */
