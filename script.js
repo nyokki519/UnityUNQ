@@ -299,44 +299,73 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function submitViaGoogleForm() {
-    try {
-      const form = document.createElement("form");
-      form.action = CONFIG.GOOGLE_FORM_ACTION_URL;
-      form.method = "POST";
-      form.target = "hidden-submit-frame";
-      form.style.display = "none";
+  try {
+    const form = document.createElement("form");
 
-      appendField(form, CONFIG.ENTRY_IDS.satisfaction, String(state.answers.satisfaction));
-      state.answers.goodPoints.forEach(v => appendField(form, CONFIG.ENTRY_IDS.goodPoints, v));
-      state.answers.reason.forEach(v => appendField(form, CONFIG.ENTRY_IDS.reason, v));
-      state.answers.futureEvents.forEach(v => appendField(form, CONFIG.ENTRY_IDS.futureEvents, v));
-      appendField(form, CONFIG.ENTRY_IDS.freeText, state.answers.freeText);
+    form.action = CONFIG.GOOGLE_FORM_ACTION_URL;
+    form.method = "POST";
+    form.target = "hidden-submit-frame";
+    form.style.display = "none";
 
-      document.body.appendChild(form);
+    // Q1
+    appendField(
+      form,
+      CONFIG.ENTRY_IDS.satisfaction,
+      String(state.answers.satisfaction)
+    );
 
-      // Googleフォームへのiframe送信はクロスオリジンのためレスポンスを読めない。
-      // ネットワークエラーが出ずに一定時間経過したら成功とみなす。
-      let settled = false;
-      const timer = setTimeout(() => {
-        if (!settled) { settled = true; onSubmitSuccess(); }
-        form.remove();
-      }, CONFIG.SUBMIT_TIMEOUT_MS);
+    // Q2
+    state.answers.goodPoints.forEach(value => {
+      appendField(
+        form,
+        CONFIG.ENTRY_IDS.goodPoints,
+        value
+      );
+    });
 
-      hiddenFrame.onload = () => {
-        if (!settled) {
-          settled = true;
-          clearTimeout(timer);
-          onSubmitSuccess();
-        }
-        form.remove();
-      };
+    // Q3
+    state.answers.reason.forEach(value => {
+      appendField(
+        form,
+        CONFIG.ENTRY_IDS.reason,
+        value
+      );
+    });
 
-      form.submit();
-    } catch (err) {
-      console.error("Unity survey submit error:", err);
-      onSubmitError();
-    }
+    // Q4
+    state.answers.futureEvents.forEach(value => {
+      appendField(
+        form,
+        CONFIG.ENTRY_IDS.futureEvents,
+        value
+      );
+    });
+
+    // Q5
+    appendField(
+      form,
+      CONFIG.ENTRY_IDS.freeText,
+      state.answers.freeText
+    );
+
+    document.body.appendChild(form);
+
+    // Googleフォームへ送信
+    form.submit();
+
+    // Googleフォームはクロスオリジンのため
+    // レスポンスを確認できない。
+    // 一定時間経過したら送信成功として扱う。
+    setTimeout(() => {
+      form.remove();
+      onSubmitSuccess();
+    }, CONFIG.SUBMIT_TIMEOUT_MS);
+
+  } catch (error) {
+    console.error("Unity survey submit error:", error);
+    onSubmitError();
   }
+}
 
   function appendField(form, name, value) {
     const input = document.createElement("input");
