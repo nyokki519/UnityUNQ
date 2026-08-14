@@ -23,7 +23,7 @@ const CONFIG = {
   // アンケートのURLに ?event=イベントID を付けて配布すると、
   // 完了画面にそのイベント専用のDROP導線が表示されます。
   // （event パラメータが無い場合はDROP導線は表示されません）
-  UNITY_DROP_URL: "https://your-github-pages-domain/unity-drop/"
+  UNITY_DROP_URL: "https://nyokki519.github.io/Unity-DROP/"
 };
 
 /* ==========================================================================
