@@ -1,19 +1,22 @@
 /* ==========================================================================
-   Unity イベントアンケート — script.js
-   Googleフォーム連携 + UNITY DROP連携 完成版
+   Unity イベントアンケート — script.js 完全版
 
-   【UNITY DROPの仕様】
-   ・イベントID = 日付
-   ・イベント内容には依存しない共通仕様
-   ・アンケートURLに ?event=YYYYMMDD を付けて配布
-   ・回答完了後、同じeventをUNITY DROPへ引き継ぐ
-   ・eventが無い場合はUNITY DROP導線を表示しない
+   【仕様】
+   ・Googleフォームへ回答を送信
+   ・回答完了後にUNITY DROPを表示
+   ・UNITY DROPのイベントIDは「日付」
+   ・URLに ?event=YYYYMMDD があれば、そのIDを優先
+   ・eventが無ければ日本時間の「今日の日付」を自動使用
+   ・イベント内容には一切依存しない
    ========================================================================== */
 
+
 const CONFIG = {
-  // -------------------------------------------------------------------------
-  // Googleフォーム
-  // -------------------------------------------------------------------------
+
+  /* ------------------------------------------------------------------------
+     Googleフォーム
+     ------------------------------------------------------------------------ */
+
   GOOGLE_FORM_ACTION_URL:
     "https://docs.google.com/forms/d/e/1FAIpQLSdGJYCsiK7BvL0WdmQLZ4GWwv121g6UvAB5nGTCeAC4L6Msbg/formResponse",
 
@@ -25,37 +28,46 @@ const CONFIG = {
     freeText: "entry.1967207820"
   },
 
-  // Googleフォーム送信完了までの待機時間
+  /* Googleフォーム送信待機時間 */
   SUBMIT_TIMEOUT_MS: 4000,
 
-  // -------------------------------------------------------------------------
-  // UNITY DROP
-  // -------------------------------------------------------------------------
-  // イベント内容は一切指定しない。
-  // eventパラメータだけを後ろに付けて利用する。
-  UNITY_DROP_URL: "https://nyokki519.github.io/Unity-DROP/"
+
+  /* ------------------------------------------------------------------------
+     UNITY DROP
+     ------------------------------------------------------------------------ */
+
+  UNITY_DROP_URL:
+    "https://nyokki519.github.io/Unity-DROP/"
 };
 
 
 /* ==========================================================================
-   ここから下は通常変更不要
+   DOM READY
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  /* -------------------------------------------------------------------------
-     State
-     ------------------------------------------------------------------------- */
+
+  /* =========================================================================
+     STATE
+     ========================================================================= */
 
   const state = {
+
     currentIndex: 0,
+
     total: 5,
 
     answers: {
+
       satisfaction: 0,
+
       goodPoints: [],
+
       reason: [],
+
       futureEvents: [],
+
       freeText: ""
     },
 
@@ -63,23 +75,42 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
 
-  /* -------------------------------------------------------------------------
+  /* =========================================================================
      DOM
-     ------------------------------------------------------------------------- */
+     ========================================================================= */
 
-  const screenIntro = document.getElementById("screen-intro");
-  const screenSurvey = document.getElementById("screen-survey");
-  const screenComplete = document.getElementById("screen-complete");
+  const screenIntro =
+    document.getElementById("screen-intro");
 
-  const btnStart = document.getElementById("btn-start");
-  const btnNext = document.getElementById("btn-next");
-  const btnNextLabel = document.getElementById("btn-next-label");
-  const btnBack = document.getElementById("btn-back");
+  const screenSurvey =
+    document.getElementById("screen-survey");
+
+  const screenComplete =
+    document.getElementById("screen-complete");
+
+
+  const btnStart =
+    document.getElementById("btn-start");
+
+  const btnNext =
+    document.getElementById("btn-next");
+
+  const btnNextLabel =
+    document.getElementById("btn-next-label");
+
+  const btnBack =
+    document.getElementById("btn-back");
+
 
   const questions =
-    Array.from(document.querySelectorAll(".question"));
+    Array.from(
+      document.querySelectorAll(".question")
+    );
 
-  const qError = document.getElementById("q-error");
+
+  const qError =
+    document.getElementById("q-error");
+
 
   const progressLabel =
     document.getElementById("progress-label");
@@ -87,14 +118,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const progressRingBar =
     document.getElementById("progress-ring-bar");
 
+
   const starRating =
     document.getElementById("star-rating");
 
   const stars =
-    Array.from(starRating.querySelectorAll(".star"));
+    Array.from(
+      starRating.querySelectorAll(".star")
+    );
 
   const starCaption =
     document.getElementById("star-caption");
+
 
   const freeText =
     document.getElementById("free-text");
@@ -102,11 +137,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const freeTextCount =
     document.getElementById("free-text-count");
 
+
   const overlay =
     document.getElementById("overlay");
 
   const overlayText =
     document.getElementById("overlay-text");
+
 
   const toast =
     document.getElementById("toast");
@@ -117,8 +154,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const toastRetry =
     document.getElementById("toast-retry");
 
+
   const hiddenFrame =
     document.getElementById("hidden-submit-frame");
+
+
+  /* =========================================================================
+     UNITY DROP DOM
+     ========================================================================= */
 
   const dropCta =
     document.getElementById("drop-cta");
@@ -127,71 +170,159 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("drop-cta-link");
 
 
-  /* -------------------------------------------------------------------------
-     UNITY DROP
+  /* =========================================================================
+     UNITY DROP EVENT ID
      
-     アンケートURL:
-       https://example.com/?event=20260816
+     優先順位：
 
+     ① URLに ?event=20260816 がある
+        ↓
+        20260816を使用
+
+     ② URLにeventがない
+        ↓
+        日本時間の今日の日付を使用
+
+     例：
+
+     2026年8月14日
      ↓
-
-     DROP URL:
-       https://nyokki519.github.io/Unity-DROP/?event=20260816
-
-     eventが無い場合:
-       DROP導線を表示しない
-     ------------------------------------------------------------------------- */
+     20260814
+     ========================================================================= */
 
   function getEventId() {
 
-    const params = new URLSearchParams(window.location.search);
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
 
-    const eventId = params.get("event");
 
-    if (!eventId) {
-      return null;
+    /* -----------------------------------------------------------------------
+       URLにeventが指定されている場合
+       ----------------------------------------------------------------------- */
+
+    const urlEventId =
+      params.get("event");
+
+
+    if (
+      urlEventId &&
+      /^\d{8}$/.test(urlEventId)
+    ) {
+
+      return urlEventId;
     }
 
-    // イベントIDは日付形式 YYYYMMDD のみ許可
-    // 例: 20260816
-    if (!/^\d{8}$/.test(eventId)) {
-      console.warn("Invalid UNITY DROP event ID:", eventId);
-      return null;
-    }
 
-    return eventId;
+    /* -----------------------------------------------------------------------
+       eventが無い場合
+       日本時間の日付を自動生成
+       ----------------------------------------------------------------------- */
+
+    const now =
+      new Date();
+
+
+    const japanDate =
+      new Date(
+        now.toLocaleString(
+          "en-US",
+          {
+            timeZone: "Asia/Tokyo"
+          }
+        )
+      );
+
+
+    const year =
+      japanDate.getFullYear();
+
+
+    const month =
+      String(
+        japanDate.getMonth() + 1
+      ).padStart(2, "0");
+
+
+    const day =
+      String(
+        japanDate.getDate()
+      ).padStart(2, "0");
+
+
+    return `${year}${month}${day}`;
   }
 
 
+  /* =========================================================================
+     UNITY DROP CTA設定
+     ========================================================================= */
+
   function setupDropCta() {
 
-    if (!dropCta || !dropCtaLink) {
+    if (
+      !dropCta ||
+      !dropCtaLink
+    ) {
+
+      console.warn(
+        "UNITY DROP CTA elements not found."
+      );
+
       return;
     }
 
-    const eventId = getEventId();
 
-    // eventが無い場合
-    if (!eventId) {
-      dropCta.hidden = true;
-      return;
-    }
+    const eventId =
+      getEventId();
 
-    // DROP URLを作成
+
+    /* -----------------------------------------------------------------------
+       DROP URLを生成
+       ----------------------------------------------------------------------- */
+
     const dropUrl =
-      new URL(CONFIG.UNITY_DROP_URL);
+      new URL(
+        CONFIG.UNITY_DROP_URL
+      );
 
-    // 日付イベントIDをそのまま引き継ぐ
-    dropUrl.searchParams.set("event", eventId);
 
-    // 完成したURLを設定
-    dropCtaLink.href = dropUrl.toString();
+    /* -----------------------------------------------------------------------
+       日付イベントIDを渡す
+       ----------------------------------------------------------------------- */
 
-    // 外部遷移
-    dropCtaLink.target = "_self";
+    dropUrl.searchParams.set(
+      "event",
+      eventId
+    );
 
-    // 表示
-    dropCta.hidden = false;
+
+    /* -----------------------------------------------------------------------
+       ボタンへURL設定
+       ----------------------------------------------------------------------- */
+
+    dropCtaLink.href =
+      dropUrl.toString();
+
+
+    dropCtaLink.target =
+      "_self";
+
+
+    /* -----------------------------------------------------------------------
+       DROP案内を表示
+       ----------------------------------------------------------------------- */
+
+    dropCta.hidden =
+      false;
+
+
+    console.log(
+      "UNITY DROP event ID:",
+      eventId
+    );
+
 
     console.log(
       "UNITY DROP URL:",
@@ -200,9 +331,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  /* -------------------------------------------------------------------------
-     Screen navigation
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     SCREEN
+     ========================================================================= */
 
   function showScreen(el) {
 
@@ -211,26 +342,45 @@ document.addEventListener("DOMContentLoaded", () => {
       screenSurvey,
       screenComplete
     ].forEach(screen => {
-      screen.classList.remove("is-active");
+
+      screen.classList.remove(
+        "is-active"
+      );
     });
 
-    el.classList.add("is-active");
 
-    window.scrollTo(0, 0);
+    el.classList.add(
+      "is-active"
+    );
+
+
+    window.scrollTo(
+      0,
+      0
+    );
   }
 
 
-  btnStart.addEventListener("click", () => {
+  /* =========================================================================
+     START
+     ========================================================================= */
 
-    showScreen(screenSurvey);
+  btnStart.addEventListener(
+    "click",
+    () => {
 
-    renderQuestion(0);
-  });
+      showScreen(
+        screenSurvey
+      );
+
+      renderQuestion(0);
+    }
+  );
 
 
-  /* -------------------------------------------------------------------------
-     Progress
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     PROGRESS
+     ========================================================================= */
 
   const RING_CIRCUMFERENCE =
     2 * Math.PI * 24;
@@ -238,7 +388,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateProgress(index) {
 
-    const num = index + 1;
+    const num =
+      index + 1;
+
 
     progressLabel.innerHTML =
       String(num).padStart(2, "0") +
@@ -246,41 +398,57 @@ document.addEventListener("DOMContentLoaded", () => {
       state.total +
       "</span>";
 
+
     const ratio =
       num / state.total;
+
 
     const offset =
       RING_CIRCUMFERENCE *
       (1 - ratio);
+
 
     progressRingBar.style.strokeDashoffset =
       String(offset);
   }
 
 
-  /* -------------------------------------------------------------------------
-     Question rendering
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     QUESTION RENDER
+     ========================================================================= */
 
   function renderQuestion(index) {
 
     questions.forEach(question => {
-      question.classList.remove("is-active");
+
+      question.classList.remove(
+        "is-active"
+      );
     });
+
 
     const target =
       questions[index];
 
-    target.classList.add("is-active");
 
-    updateProgress(index);
+    target.classList.add(
+      "is-active"
+    );
+
+
+    updateProgress(
+      index
+    );
+
 
     clearError();
+
 
     btnBack.classList.toggle(
       "is-hidden",
       index === 0
     );
+
 
     btnNextLabel.textContent =
       index === state.total - 1
@@ -289,50 +457,73 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
+  /* =========================================================================
+     ERROR
+     ========================================================================= */
+
   function clearError() {
 
-    qError.textContent = "";
+    qError.textContent =
+      "";
   }
 
 
   function showError(message) {
 
-    qError.textContent = message;
+    qError.textContent =
+      message;
   }
 
 
-  /* -------------------------------------------------------------------------
-     Q1 Star rating
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     Q1 STAR
+     ========================================================================= */
 
   const starLabels = [
+
     "",
+
     "うーん、いまいち",
+
     "普通でした",
+
     "良かったです",
+
     "とても良かったです",
+
     "最高でした！"
   ];
 
 
-  function paintStars(value, hoverValue) {
+  function paintStars(
+    value,
+    hoverValue
+  ) {
 
     const active =
-      hoverValue || value;
+      hoverValue ||
+      value;
+
 
     stars.forEach(starEl => {
 
       const v =
-        Number(starEl.dataset.value);
+        Number(
+          starEl.dataset.value
+        );
+
 
       starEl.classList.toggle(
         "is-filled",
         v <= active
       );
 
+
       starEl.setAttribute(
         "aria-checked",
-        String(v === value)
+        String(
+          v === value
+        )
       );
     });
   }
@@ -341,26 +532,40 @@ document.addEventListener("DOMContentLoaded", () => {
   stars.forEach(starEl => {
 
     const v =
-      Number(starEl.dataset.value);
+      Number(
+        starEl.dataset.value
+      );
 
-    starEl.addEventListener("click", () => {
 
-      state.answers.satisfaction = v;
+    starEl.addEventListener(
+      "click",
+      () => {
 
-      paintStars(v);
+        state.answers.satisfaction =
+          v;
 
-      starCaption.textContent =
-        starLabels[v];
 
-      starCaption.classList.add("is-set");
+        paintStars(v);
 
-      clearError();
-    });
+
+        starCaption.textContent =
+          starLabels[v];
+
+
+        starCaption.classList.add(
+          "is-set"
+        );
+
+
+        clearError();
+      }
+    );
 
 
     starEl.addEventListener(
       "mouseenter",
       () => {
+
         paintStars(
           state.answers.satisfaction,
           v
@@ -372,6 +577,7 @@ document.addEventListener("DOMContentLoaded", () => {
     starEl.addEventListener(
       "mouseleave",
       () => {
+
         paintStars(
           state.answers.satisfaction
         );
@@ -380,9 +586,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
 
-  /* -------------------------------------------------------------------------
-     Q2-Q4 Chip
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     Q2〜Q4 CHIP
+     ========================================================================= */
 
   document
     .querySelectorAll(".chip-group")
@@ -390,6 +596,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const key =
         group.dataset.group;
+
 
       group
         .querySelectorAll(".chip")
@@ -402,15 +609,21 @@ document.addEventListener("DOMContentLoaded", () => {
               const value =
                 chip.dataset.value;
 
+
               const list =
                 state.answers[key];
+
 
               const pos =
                 list.indexOf(value);
 
+
               if (pos === -1) {
 
-                list.push(value);
+                list.push(
+                  value
+                );
+
 
                 chip.classList.add(
                   "is-selected"
@@ -418,12 +631,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
               } else {
 
-                list.splice(pos, 1);
+                list.splice(
+                  pos,
+                  1
+                );
+
 
                 chip.classList.remove(
                   "is-selected"
                 );
               }
+
 
               clearError();
             }
@@ -432,9 +650,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 
-  /* -------------------------------------------------------------------------
-     Q5 Free text
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     Q5 FREE TEXT
+     ========================================================================= */
 
   freeText.addEventListener(
     "input",
@@ -442,6 +660,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       state.answers.freeText =
         freeText.value;
+
 
       freeTextCount.textContent =
         String(
@@ -451,30 +670,40 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
 
-  /* -------------------------------------------------------------------------
-     Validation
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     VALIDATION
+     ========================================================================= */
 
   function validateCurrent() {
 
     const q =
-      questions[state.currentIndex];
+      questions[
+        state.currentIndex
+      ];
+
 
     const key =
       q.dataset.question;
 
+
     const required =
-      q.dataset.required === "true";
+      q.dataset.required ===
+      "true";
+
 
     if (!required) {
+
       return true;
     }
+
 
     switch (key) {
 
       case "1":
 
-        if (!state.answers.satisfaction) {
+        if (
+          !state.answers.satisfaction
+        ) {
 
           showError(
             "満足度を選択してください"
@@ -541,21 +770,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  /* -------------------------------------------------------------------------
-     Next
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     NEXT
+     ========================================================================= */
 
   btnNext.addEventListener(
     "click",
     () => {
 
-      if (state.isSubmitting) {
+      if (
+        state.isSubmitting
+      ) {
+
         return;
       }
 
-      if (!validateCurrent()) {
+
+      if (
+        !validateCurrent()
+      ) {
+
         return;
       }
+
 
       if (
         state.currentIndex ===
@@ -567,7 +804,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      state.currentIndex++;
+
+      state.currentIndex += 1;
+
 
       renderQuestion(
         state.currentIndex
@@ -576,23 +815,32 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
 
-  /* -------------------------------------------------------------------------
-     Back
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     BACK
+     ========================================================================= */
 
   btnBack.addEventListener(
     "click",
     () => {
 
-      if (state.isSubmitting) {
+      if (
+        state.isSubmitting
+      ) {
+
         return;
       }
 
-      if (state.currentIndex === 0) {
+
+      if (
+        state.currentIndex === 0
+      ) {
+
         return;
       }
 
-      state.currentIndex--;
+
+      state.currentIndex -= 1;
+
 
       renderQuestion(
         state.currentIndex
@@ -601,9 +849,9 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
 
-  /* -------------------------------------------------------------------------
-     Overlay
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     OVERLAY
+     ========================================================================= */
 
   function setOverlay(
     active,
@@ -615,21 +863,24 @@ document.addEventListener("DOMContentLoaded", () => {
       active
     );
 
+
     overlay.setAttribute(
       "aria-hidden",
       String(!active)
     );
 
+
     if (text) {
+
       overlayText.textContent =
         text;
     }
   }
 
 
-  /* -------------------------------------------------------------------------
-     Toast
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     TOAST
+     ========================================================================= */
 
   let toastTimer = null;
 
@@ -639,20 +890,25 @@ document.addEventListener("DOMContentLoaded", () => {
     toastText.textContent =
       message;
 
+
     toast.classList.add(
       "is-active"
     );
+
 
     clearTimeout(
       toastTimer
     );
 
+
     toastTimer =
       setTimeout(
         () => {
+
           toast.classList.remove(
             "is-active"
           );
+
         },
         6000
       );
@@ -667,22 +923,29 @@ document.addEventListener("DOMContentLoaded", () => {
         "is-active"
       );
 
+
       submitSurvey();
     }
   );
 
 
-  /* -------------------------------------------------------------------------
-     Submit
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     SUBMIT SURVEY
+     ========================================================================= */
 
   function submitSurvey() {
 
-    if (state.isSubmitting) {
+    if (
+      state.isSubmitting
+    ) {
+
       return;
     }
 
-    if (!navigator.onLine) {
+
+    if (
+      !navigator.onLine
+    ) {
 
       showToast(
         "通信環境をご確認のうえ、もう一度お試しください。"
@@ -691,60 +954,86 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    state.isSubmitting = true;
 
-    btnNext.disabled = true;
+    state.isSubmitting =
+      true;
+
+
+    btnNext.disabled =
+      true;
+
 
     btnBack.classList.add(
       "is-hidden"
     );
+
 
     setOverlay(
       true,
       "送信しています…"
     );
 
+
     submitViaGoogleForm();
   }
 
 
-  /* -------------------------------------------------------------------------
-     Submit success
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     SUBMIT SUCCESS
+     ========================================================================= */
 
   function onSubmitSuccess() {
 
-    setOverlay(false);
+    setOverlay(
+      false
+    );
 
-    state.isSubmitting = false;
 
-    btnNext.disabled = false;
+    state.isSubmitting =
+      false;
+
+
+    btnNext.disabled =
+      false;
+
 
     showScreen(
       screenComplete
     );
 
-    // 完了画面を表示してからDROP導線を設定
+
+    /* -----------------------------------------------------------------------
+       ここで必ずDROPを設定
+       ----------------------------------------------------------------------- */
+
     setupDropCta();
   }
 
 
-  /* -------------------------------------------------------------------------
-     Submit error
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     SUBMIT ERROR
+     ========================================================================= */
 
   function onSubmitError() {
 
-    setOverlay(false);
+    setOverlay(
+      false
+    );
 
-    state.isSubmitting = false;
 
-    btnNext.disabled = false;
+    state.isSubmitting =
+      false;
+
+
+    btnNext.disabled =
+      false;
+
 
     btnBack.classList.toggle(
       "is-hidden",
       state.currentIndex === 0
     );
+
 
     showToast(
       "送信に失敗しました。お手数ですが、もう一度お試しください。"
@@ -752,29 +1041,37 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  /* -------------------------------------------------------------------------
-     Google Form送信
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     GOOGLE FORM SUBMIT
+     ========================================================================= */
 
   function submitViaGoogleForm() {
 
     try {
 
       const form =
-        document.createElement("form");
+        document.createElement(
+          "form"
+        );
+
 
       form.action =
         CONFIG.GOOGLE_FORM_ACTION_URL;
 
+
       form.method =
         "POST";
+
 
       form.target =
         "hidden-submit-frame";
 
+
       form.style.display =
         "none";
 
+
+      /* Q1 */
 
       appendField(
         form,
@@ -784,6 +1081,8 @@ document.addEventListener("DOMContentLoaded", () => {
         )
       );
 
+
+      /* Q2 */
 
       state.answers.goodPoints.forEach(
         value => {
@@ -797,6 +1096,8 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
 
+      /* Q3 */
+
       state.answers.reason.forEach(
         value => {
 
@@ -808,6 +1109,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       );
 
+
+      /* Q4 */
 
       state.answers.futureEvents.forEach(
         value => {
@@ -821,6 +1124,8 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
 
+      /* Q5 */
+
       appendField(
         form,
         CONFIG.ENTRY_IDS.freeText,
@@ -833,7 +1138,8 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
 
-      let settled = false;
+      let settled =
+        false;
 
 
       const timer =
@@ -842,10 +1148,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!settled) {
 
-              settled = true;
+              settled =
+                true;
+
 
               onSubmitSuccess();
             }
+
 
             form.remove();
 
@@ -859,12 +1168,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
           if (!settled) {
 
-            settled = true;
+            settled =
+              true;
 
-            clearTimeout(timer);
+
+            clearTimeout(
+              timer
+            );
+
 
             onSubmitSuccess();
           }
+
 
           form.remove();
         };
@@ -880,14 +1195,15 @@ document.addEventListener("DOMContentLoaded", () => {
         err
       );
 
+
       onSubmitError();
     }
   }
 
 
-  /* -------------------------------------------------------------------------
-     Hidden form field
-     ------------------------------------------------------------------------- */
+  /* =========================================================================
+     HIDDEN FORM FIELD
+     ========================================================================= */
 
   function appendField(
     form,
@@ -896,20 +1212,27 @@ document.addEventListener("DOMContentLoaded", () => {
   ) {
 
     const input =
-      document.createElement("input");
+      document.createElement(
+        "input"
+      );
+
 
     input.type =
       "hidden";
 
+
     input.name =
       name;
 
+
     input.value =
       value;
+
 
     form.appendChild(
       input
     );
   }
+
 
 });
