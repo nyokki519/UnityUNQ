@@ -1,5 +1,6 @@
 /* ==========================================================================
-   Unity イベントアンケート — script.js（Googleフォーム連携・完成版）
+   Unity イベントアンケート — script.js
+   Googleフォーム連携 + UNITY DROP
    ========================================================================== */
 
 const CONFIG = {
@@ -14,17 +15,12 @@ const CONFIG = {
   },
 
   // 送信後、成功したとみなすまでの待機時間（ミリ秒）
-  // ※ Googleフォームへのiframe送信はレスポンス内容を読み取れない仕様のため、
-  //   一定時間内にネットワークエラーが起きなければ成功として扱います
   SUBMIT_TIMEOUT_MS: 4000,
 
-  // ---- UNITY DROP 連携設定 -------------------------------------------------
-  // UNITY DROPはアンケートとは完全に別システムです。
-  // アンケートのURLに ?event=イベントID を付けて配布すると、
-  // 完了画面にそのイベント専用のDROP導線が表示されます。
-  // （event パラメータが無い場合はDROP導線は表示されません）
+  // UNITY DROP
   UNITY_DROP_URL: "https://nyokki519.github.io/Unity-DROP/"
 };
+
 
 /* ==========================================================================
    ここから下はロジックです（通常は変更不要）
@@ -35,9 +31,11 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ---------------------------------------------------------------------
      State
   --------------------------------------------------------------------- */
+
   const state = {
     currentIndex: 0,
     total: 5,
+
     answers: {
       satisfaction: 0,
       goodPoints: [],
@@ -45,32 +43,69 @@ document.addEventListener("DOMContentLoaded", () => {
       futureEvents: [],
       freeText: ""
     },
+
     isSubmitting: false
   };
 
-  const RING_CIRCUMFERENCE = 2 * Math.PI * 24;
+  const RING_CIRCUMFERENCE =
+    2 * Math.PI * 24;
+
 
   /* ---------------------------------------------------------------------
      DOM refs
   --------------------------------------------------------------------- */
-  const screenIntro = document.getElementById("screen-intro");
-  const screenSurvey = document.getElementById("screen-survey");
-  const screenComplete = document.getElementById("screen-complete");
 
-  const btnStart = document.getElementById("btn-start");
-  const btnNext = document.getElementById("btn-next");
-  const btnNextLabel = document.getElementById("btn-next-label");
-  const btnBack = document.getElementById("btn-back");
+  const screenIntro =
+    document.getElementById("screen-intro");
 
-  const questions = Array.from(document.querySelectorAll(".question"));
-  const qError = document.getElementById("q-error");
+  const screenSurvey =
+    document.getElementById("screen-survey");
 
-  const progressLabel = document.getElementById("progress-label");
-  const progressRingBar = document.getElementById("progress-ring-bar");
+  const screenComplete =
+    document.getElementById("screen-complete");
 
-  const starRating = document.getElementById("star-rating");
-  const stars = Array.from(starRating.querySelectorAll(".star"));
-  const starCaption = document.getElementById("star-caption");
+
+  const btnStart =
+    document.getElementById("btn-start");
+
+  const btnNext =
+    document.getElementById("btn-next");
+
+  const btnNextLabel =
+    document.getElementById("btn-next-label");
+
+  const btnBack =
+    document.getElementById("btn-back");
+
+
+  const questions =
+    Array.from(
+      document.querySelectorAll(".question")
+    );
+
+  const qError =
+    document.getElementById("q-error");
+
+
+  const progressLabel =
+    document.getElementById("progress-label");
+
+  const progressRingBar =
+    document.getElementById("progress-ring-bar");
+
+
+  const starRating =
+    document.getElementById("star-rating");
+
+  const stars =
+    Array.from(
+      starRating.querySelectorAll(".star")
+    );
+
+  const starCaption =
+    document.getElementById("star-caption");
+
+
   const starLabels = [
     "",
     "うーん、いまいち",
@@ -80,83 +115,112 @@ document.addEventListener("DOMContentLoaded", () => {
     "最高でした！"
   ];
 
-  const freeText = document.getElementById("free-text");
-  const freeTextCount = document.getElementById("free-text-count");
 
-  const overlay = document.getElementById("overlay");
-  const overlayText = document.getElementById("overlay-text");
+  const freeText =
+    document.getElementById("free-text");
 
-  const toast = document.getElementById("toast");
-  const toastText = document.getElementById("toast-text");
-  const toastRetry = document.getElementById("toast-retry");
+  const freeTextCount =
+    document.getElementById("free-text-count");
 
-  const hiddenFrame = document.getElementById("hidden-submit-frame");
 
-  const dropCta = document.getElementById("drop-cta");
-  const dropCtaLink = document.getElementById("drop-cta-link");
+  const overlay =
+    document.getElementById("overlay");
+
+  const overlayText =
+    document.getElementById("overlay-text");
+
+
+  const toast =
+    document.getElementById("toast");
+
+  const toastText =
+    document.getElementById("toast-text");
+
+  const toastRetry =
+    document.getElementById("toast-retry");
+
+
+  const hiddenFrame =
+    document.getElementById("hidden-submit-frame");
+
 
   /* ---------------------------------------------------------------------
-     UNITY DROP 導線（アンケートのURLに ?event=xxx が付いている場合のみ表示）
-     ※ アンケートの回答内容・回答者情報はDROPには一切渡しません
+     UNITY DROP
   --------------------------------------------------------------------- */
+
+  const dropCta =
+    document.getElementById("drop-cta");
+
+  const dropCtaLink =
+    document.getElementById("drop-cta-link");
+
+
   function setupDropCta() {
+
     if (!dropCta || !dropCtaLink) return;
 
-    const params = new URLSearchParams(
-      window.location.search
-    );
-
-    const eventId = params.get("event");
-
-    if (!eventId) {
-      dropCta.hidden = true;
-      return;
-    }
-
-    const url = new URL(CONFIG.UNITY_DROP_URL);
-
-    url.searchParams.set(
-      "event",
-      eventId
-    );
-
-    dropCtaLink.href = url.toString();
+    // イベントIDなどは一切使用せず、
+    // 常に共通のUNITY DROPへリンク
+    dropCtaLink.href =
+      CONFIG.UNITY_DROP_URL;
 
     dropCta.hidden = false;
+
   }
+
 
   /* ---------------------------------------------------------------------
      Screen navigation
   --------------------------------------------------------------------- */
+
   function showScreen(el) {
 
     [
       screenIntro,
       screenSurvey,
       screenComplete
-    ].forEach(s => {
-      s.classList.remove("is-active");
+    ].forEach(screen => {
+
+      screen.classList.remove(
+        "is-active"
+      );
+
     });
 
-    el.classList.add("is-active");
+    el.classList.add(
+      "is-active"
+    );
 
-    window.scrollTo(0, 0);
+    window.scrollTo(
+      0,
+      0
+    );
   }
 
-  btnStart.addEventListener("click", () => {
 
-    showScreen(screenSurvey);
+  btnStart.addEventListener(
+    "click",
+    () => {
 
-    renderQuestion(0);
+      showScreen(
+        screenSurvey
+      );
 
-  });
+      renderQuestion(0);
+
+    }
+  );
+
 
   /* ---------------------------------------------------------------------
      Progress ring / label
   --------------------------------------------------------------------- */
+
   function updateProgress(index) {
 
-    const num = index + 1;
+    const num =
+      index + 1;
+
 
     progressLabel.innerHTML =
       String(num).padStart(2, "0") +
@@ -164,194 +228,275 @@ document.addEventListener("DOMContentLoaded", () => {
       state.total +
       "</span>";
 
+
     const ratio =
       num / state.total;
+
 
     const offset =
       RING_CIRCUMFERENCE *
       (1 - ratio);
 
+
     progressRingBar.style.strokeDashoffset =
       String(offset);
+
   }
 
+
   /* ---------------------------------------------------------------------
-     Render question / navigation buttons
+     Render question
   --------------------------------------------------------------------- */
+
   function renderQuestion(index) {
 
-    questions.forEach(q => {
-      q.classList.remove("is-active");
-    });
+    questions.forEach(
+      question => {
+
+        question.classList.remove(
+          "is-active"
+        );
+
+      }
+    );
+
 
     const target =
       questions[index];
 
-    target.classList.add("is-active");
 
-    updateProgress(index);
+    target.classList.add(
+      "is-active"
+    );
+
+
+    updateProgress(
+      index
+    );
+
 
     clearError();
+
 
     btnBack.classList.toggle(
       "is-hidden",
       index === 0
     );
 
+
     btnNextLabel.textContent =
-      (index === state.total - 1)
+      index === state.total - 1
         ? "回答を送信する"
         : "次へ";
+
   }
+
 
   function clearError() {
-    qError.textContent = "";
+
+    qError.textContent =
+      "";
+
   }
+
 
   function showError(msg) {
-    qError.textContent = msg;
+
+    qError.textContent =
+      msg;
+
   }
 
+
   /* ---------------------------------------------------------------------
-     Q1: Star rating
+     Q1 Star rating
   --------------------------------------------------------------------- */
-  function paintStars(value, hoverValue) {
+
+  function paintStars(
+    value,
+    hoverValue
+  ) {
 
     const active =
       hoverValue || value;
 
-    stars.forEach(starEl => {
 
-      const v =
-        Number(starEl.dataset.value);
+    stars.forEach(
+      starEl => {
 
-      starEl.classList.toggle(
-        "is-filled",
-        v <= active
-      );
+        const v =
+          Number(
+            starEl.dataset.value
+          );
 
-      starEl.setAttribute(
-        "aria-checked",
-        String(v === value)
-      );
 
-    });
+        starEl.classList.toggle(
+          "is-filled",
+          v <= active
+        );
+
+
+        starEl.setAttribute(
+          "aria-checked",
+          String(
+            v === value
+          )
+        );
+
+      }
+    );
+
   }
 
-  stars.forEach(starEl => {
 
-    const v =
-      Number(starEl.dataset.value);
+  stars.forEach(
+    starEl => {
 
-    starEl.addEventListener("click", () => {
+      const v =
+        Number(
+          starEl.dataset.value
+        );
 
-      state.answers.satisfaction =
-        v;
 
-      paintStars(v);
+      starEl.addEventListener(
+        "click",
+        () => {
 
-      starCaption.textContent =
-        starLabels[v];
+          state.answers.satisfaction =
+            v;
 
-      starCaption.classList.add(
-        "is-set"
+
+          paintStars(
+            v
+          );
+
+
+          starCaption.textContent =
+            starLabels[v];
+
+
+          starCaption.classList.add(
+            "is-set"
+          );
+
+
+          clearError();
+
+        }
       );
 
-      clearError();
 
-    });
+      starEl.addEventListener(
+        "mouseenter",
+        () => {
 
-    starEl.addEventListener(
-      "mouseenter",
-      () => {
+          paintStars(
+            state.answers.satisfaction,
+            v
+          );
 
-        paintStars(
-          state.answers.satisfaction,
-          v
-        );
+        }
+      );
 
-      }
-    );
 
-    starEl.addEventListener(
-      "mouseleave",
-      () => {
+      starEl.addEventListener(
+        "mouseleave",
+        () => {
 
-        paintStars(
-          state.answers.satisfaction
-        );
+          paintStars(
+            state.answers.satisfaction
+          );
 
-      }
-    );
+        }
+      );
 
-  });
+    }
+  );
+
 
   /* ---------------------------------------------------------------------
-     Q2–Q4: Chip multi-select
+     Q2〜Q4 Chip multi-select
   --------------------------------------------------------------------- */
+
   document
     .querySelectorAll(".chip-group")
-    .forEach(group => {
+    .forEach(
+      group => {
 
-      const key =
-        group.dataset.group;
+        const key =
+          group.dataset.group;
 
-      group
-        .querySelectorAll(".chip")
-        .forEach(chip => {
 
-          chip.addEventListener(
-            "click",
-            () => {
+        group
+          .querySelectorAll(".chip")
+          .forEach(
+            chip => {
 
-              const value =
-                chip.dataset.value;
+              chip.addEventListener(
+                "click",
+                () => {
 
-              const list =
-                state.answers[key];
+                  const value =
+                    chip.dataset.value;
 
-              const pos =
-                list.indexOf(value);
 
-              if (pos === -1) {
+                  const list =
+                    state.answers[key];
 
-                list.push(value);
 
-                chip.classList.add(
-                  "is-selected"
-                );
+                  const pos =
+                    list.indexOf(
+                      value
+                    );
 
-              } else {
 
-                list.splice(
-                  pos,
-                  1
-                );
+                  if (pos === -1) {
 
-                chip.classList.remove(
-                  "is-selected"
-                );
+                    list.push(
+                      value
+                    );
 
-              }
+                    chip.classList.add(
+                      "is-selected"
+                    );
 
-              clearError();
+                  } else {
+
+                    list.splice(
+                      pos,
+                      1
+                    );
+
+                    chip.classList.remove(
+                      "is-selected"
+                    );
+
+                  }
+
+
+                  clearError();
+
+                }
+              );
 
             }
           );
 
-        });
+      }
+    );
 
-    });
 
   /* ---------------------------------------------------------------------
-     Q5: Free text
+     Q5 Free text
   --------------------------------------------------------------------- */
+
   freeText.addEventListener(
     "input",
     () => {
 
       state.answers.freeText =
         freeText.value;
+
 
       freeTextCount.textContent =
         String(
@@ -361,36 +506,49 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   );
 
+
   /* ---------------------------------------------------------------------
-     Validation per question
+     Validation
   --------------------------------------------------------------------- */
+
   function validateCurrent() {
 
     const q =
-      questions[state.currentIndex];
+      questions[
+        state.currentIndex
+      ];
+
 
     const key =
       q.dataset.question;
 
+
     const required =
-      q.dataset.required === "true";
+      q.dataset.required ===
+      "true";
+
 
     if (!required) return true;
+
 
     switch (key) {
 
       case "1":
 
-        if (!state.answers.satisfaction) {
+        if (
+          !state.answers.satisfaction
+        ) {
 
           showError(
             "満足度を選択してください"
           );
 
           return false;
+
         }
 
         return true;
+
 
       case "2":
 
@@ -403,9 +561,11 @@ document.addEventListener("DOMContentLoaded", () => {
           );
 
           return false;
+
         }
 
         return true;
+
 
       case "3":
 
@@ -418,9 +578,11 @@ document.addEventListener("DOMContentLoaded", () => {
           );
 
           return false;
+
         }
 
         return true;
+
 
       case "4":
 
@@ -433,26 +595,38 @@ document.addEventListener("DOMContentLoaded", () => {
           );
 
           return false;
+
         }
 
         return true;
 
+
       default:
 
         return true;
+
     }
+
   }
 
+
   /* ---------------------------------------------------------------------
-     Next / Back navigation
+     Next
   --------------------------------------------------------------------- */
+
   btnNext.addEventListener(
     "click",
     () => {
 
-      if (state.isSubmitting) return;
+      if (
+        state.isSubmitting
+      ) return;
 
-      if (!validateCurrent()) return;
+
+      if (
+        !validateCurrent()
+      ) return;
+
 
       if (
         state.currentIndex ===
@@ -462,9 +636,12 @@ document.addEventListener("DOMContentLoaded", () => {
         submitSurvey();
 
         return;
+
       }
 
+
       state.currentIndex += 1;
+
 
       renderQuestion(
         state.currentIndex
@@ -472,16 +649,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
   );
+
+
+  /* ---------------------------------------------------------------------
+     Back
+  --------------------------------------------------------------------- */
 
   btnBack.addEventListener(
     "click",
     () => {
 
-      if (state.isSubmitting) return;
+      if (
+        state.isSubmitting
+      ) return;
 
-      if (state.currentIndex === 0) return;
+
+      if (
+        state.currentIndex === 0
+      ) return;
+
 
       state.currentIndex -= 1;
+
 
       renderQuestion(
         state.currentIndex
@@ -490,51 +679,77 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   );
 
+
   /* ---------------------------------------------------------------------
-     Overlay / toast helpers
+     Overlay
   --------------------------------------------------------------------- */
-  function setOverlay(active, text) {
+
+  function setOverlay(
+    active,
+    text
+  ) {
 
     overlay.classList.toggle(
       "is-active",
       active
     );
 
+
     overlay.setAttribute(
       "aria-hidden",
-      String(!active)
+      String(
+        !active
+      )
     );
 
+
     if (text) {
-      overlayText.textContent = text;
+
+      overlayText.textContent =
+        text;
+
     }
+
   }
 
+
+  /* ---------------------------------------------------------------------
+     Toast
+  --------------------------------------------------------------------- */
+
   let toastTimer = null;
+
 
   function showToast(msg) {
 
     toastText.textContent =
       msg;
 
+
     toast.classList.add(
       "is-active"
     );
+
 
     clearTimeout(
       toastTimer
     );
 
+
     toastTimer =
       setTimeout(
         () => {
+
           toast.classList.remove(
             "is-active"
           );
+
         },
         6000
       );
+
   }
+
 
   toastRetry.addEventListener(
     "click",
@@ -544,94 +759,148 @@ document.addEventListener("DOMContentLoaded", () => {
         "is-active"
       );
 
+
       submitSurvey();
 
     }
   );
 
+
   /* ---------------------------------------------------------------------
-     Submission
+     Submit
   --------------------------------------------------------------------- */
+
   function submitSurvey() {
 
-    if (state.isSubmitting) return;
+    if (
+      state.isSubmitting
+    ) return;
 
-    if (!navigator.onLine) {
+
+    if (
+      !navigator.onLine
+    ) {
 
       showToast(
         "通信環境をご確認のうえ、もう一度お試しください。"
       );
 
       return;
+
     }
 
-    state.isSubmitting = true;
 
-    btnNext.disabled = true;
+    state.isSubmitting =
+      true;
+
+
+    btnNext.disabled =
+      true;
+
 
     btnBack.classList.add(
       "is-hidden"
     );
+
 
     setOverlay(
       true,
       "送信しています…"
     );
 
+
     submitViaGoogleForm();
+
   }
+
+
+  /* ---------------------------------------------------------------------
+     Submit success
+  --------------------------------------------------------------------- */
 
   function onSubmitSuccess() {
 
-    setOverlay(false);
+    setOverlay(
+      false
+    );
 
-    state.isSubmitting = false;
 
-    btnNext.disabled = false;
+    state.isSubmitting =
+      false;
+
+
+    btnNext.disabled =
+      false;
+
 
     showScreen(
       screenComplete
     );
 
+
+    // 完了画面でUNITY DROPを表示
     setupDropCta();
+
   }
+
+
+  /* ---------------------------------------------------------------------
+     Submit error
+  --------------------------------------------------------------------- */
 
   function onSubmitError() {
 
-    setOverlay(false);
+    setOverlay(
+      false
+    );
 
-    state.isSubmitting = false;
 
-    btnNext.disabled = false;
+    state.isSubmitting =
+      false;
+
+
+    btnNext.disabled =
+      false;
+
 
     btnBack.classList.toggle(
       "is-hidden",
       state.currentIndex === 0
     );
 
+
     showToast(
       "送信に失敗しました。お手数ですが、もう一度お試しください。"
     );
+
   }
+
 
   /* ---------------------------------------------------------------------
      Google Form submit
   --------------------------------------------------------------------- */
+
   function submitViaGoogleForm() {
 
     try {
 
       const form =
-        document.createElement("form");
+        document.createElement(
+          "form"
+        );
+
 
       form.action =
         CONFIG.GOOGLE_FORM_ACTION_URL;
 
+
       form.method =
         "POST";
 
+
       form.target =
         "hidden-submit-frame";
+
 
       form.style.display =
         "none";
@@ -697,7 +966,8 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
 
-      let settled = false;
+      let settled =
+        false;
 
 
       const timer =
@@ -706,11 +976,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!settled) {
 
-              settled = true;
+              settled =
+                true;
 
               onSubmitSuccess();
 
             }
+
 
             form.remove();
 
@@ -724,13 +996,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
           if (!settled) {
 
-            settled = true;
+            settled =
+              true;
 
-            clearTimeout(timer);
+            clearTimeout(
+              timer
+            );
 
             onSubmitSuccess();
 
           }
+
 
           form.remove();
 
@@ -747,15 +1023,18 @@ document.addEventListener("DOMContentLoaded", () => {
         err
       );
 
+
       onSubmitError();
 
     }
+
   }
 
 
   /* ---------------------------------------------------------------------
      Hidden form field
   --------------------------------------------------------------------- */
+
   function appendField(
     form,
     name,
@@ -763,20 +1042,27 @@ document.addEventListener("DOMContentLoaded", () => {
   ) {
 
     const input =
-      document.createElement("input");
+      document.createElement(
+        "input"
+      );
+
 
     input.type =
       "hidden";
 
+
     input.name =
       name;
+
 
     input.value =
       value;
 
+
     form.appendChild(
       input
     );
+
   }
 
 });
