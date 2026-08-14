@@ -3,17 +3,826 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+
 <title>Unity | イベントアンケート</title>
 <meta name="description" content="Unityイベントにご参加いただいた皆さまへのアンケートです。">
 
-<!-- Google Fonts: 見出し=Shippori Mincho(和の温かみのある明朝) / 本文=Zen Kaku Gothic New -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+
+<link
+  href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap"
+  rel="stylesheet"
+>
 
 <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+
+<div class="bg-texture" aria-hidden="true"></div>
+
+<div class="app" id="app">
+
+  <!-- =========================================================
+       1. INTRO
+  ========================================================== -->
+
+  <section
+    class="screen screen-intro is-active"
+    id="screen-intro"
+  >
+
+    <div class="intro-inner">
+
+      <div class="brand-mark">
+
+        <span
+          class="brand-ring"
+          aria-hidden="true"
+        ></span>
+
+        <h1 class="brand-name">
+          Unity
+        </h1>
+
+      </div>
+
+      <p class="brand-tagline">
+        一生ものの仲間と、成長する。
+      </p>
+
+
+      <div
+        class="intro-divider"
+        aria-hidden="true"
+      ></div>
+
+
+      <p class="intro-message">
+        今日は参加してくれて<br>
+        ありがとうございました。
+      </p>
+
+
+      <p class="intro-submessage">
+        これからのUnityをもっと素敵な場所にするために、<br>
+        ぜひあなたの感想を聞かせてください。
+      </p>
+
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        id="btn-start"
+      >
+
+        <span>
+          アンケートに回答する
+        </span>
+
+        <svg
+          class="btn-arrow"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+
+          <path
+            d="M5 12h14M13 6l6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+        </svg>
+
+      </button>
+
+
+      <p class="intro-time-note">
+        所要時間は約1分です
+      </p>
+
+    </div>
+
+  </section>
+
+
+  <!-- =========================================================
+       2. SURVEY
+  ========================================================== -->
+
+  <section
+    class="screen screen-survey"
+    id="screen-survey"
+  >
+
+    <header class="survey-header">
+
+      <div
+        class="progress-ring-wrap"
+        aria-live="polite"
+      >
+
+        <svg
+          class="progress-ring"
+          width="56"
+          height="56"
+          viewBox="0 0 56 56"
+          aria-hidden="true"
+        >
+
+          <circle
+            class="progress-ring-track"
+            cx="28"
+            cy="28"
+            r="24"
+          ></circle>
+
+          <circle
+            class="progress-ring-bar"
+            id="progress-ring-bar"
+            cx="28"
+            cy="28"
+            r="24"
+          ></circle>
+
+        </svg>
+
+
+        <span
+          class="progress-ring-label"
+          id="progress-label"
+        >
+          01<span class="progress-ring-slash">/05</span>
+        </span>
+
+      </div>
+
+
+      <span class="survey-header-brand">
+        Unity Survey
+      </span>
+
+    </header>
+
+
+    <div
+      class="survey-body"
+      id="survey-body"
+    >
+
+
+      <!-- =====================================================
+           Q1
+      ====================================================== -->
+
+      <div
+        class="question"
+        data-question="1"
+        data-required="true"
+      >
+
+        <p class="q-eyebrow">
+          Question 01
+        </p>
+
+        <h2 class="q-title">
+          今回のイベントの満足度を<br>
+          教えてください
+        </h2>
+
+
+        <div
+          class="star-rating"
+          id="star-rating"
+          role="radiogroup"
+          aria-label="満足度"
+        >
+
+          <button
+            type="button"
+            class="star"
+            data-value="1"
+            role="radio"
+            aria-checked="false"
+            aria-label="1"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+
+
+          <button
+            type="button"
+            class="star"
+            data-value="2"
+            role="radio"
+            aria-checked="false"
+            aria-label="2"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+
+
+          <button
+            type="button"
+            class="star"
+            data-value="3"
+            role="radio"
+            aria-checked="false"
+            aria-label="3"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+
+
+          <button
+            type="button"
+            class="star"
+            data-value="4"
+            role="radio"
+            aria-checked="false"
+            aria-label="4"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+
+
+          <button
+            type="button"
+            class="star"
+            data-value="5"
+            role="radio"
+            aria-checked="false"
+            aria-label="5"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/>
+            </svg>
+          </button>
+
+        </div>
+
+
+        <p
+          class="star-caption"
+          id="star-caption"
+        >
+          タップして評価してください
+        </p>
+
+      </div>
+
+
+      <!-- =====================================================
+           Q2
+      ====================================================== -->
+
+      <div
+        class="question"
+        data-question="2"
+        data-required="true"
+      >
+
+        <p class="q-eyebrow">
+          Question 02
+        </p>
+
+        <h2 class="q-title">
+          今回のイベントで<br>
+          良かったところは？
+        </h2>
+
+        <p class="q-hint">
+          いくつでも選択できます
+        </p>
+
+
+        <div
+          class="chip-group"
+          data-group="goodPoints"
+        >
+
+          <button type="button" class="chip" data-value="イベント内容">
+            イベント内容
+          </button>
+
+          <button type="button" class="chip" data-value="他の参加者との交流">
+            他の参加者との交流
+          </button>
+
+          <button type="button" class="chip" data-value="雰囲気">
+            雰囲気
+          </button>
+
+          <button type="button" class="chip" data-value="スタッフの対応">
+            スタッフの対応
+          </button>
+
+          <button type="button" class="chip" data-value="会場">
+            会場
+          </button>
+
+          <button type="button" class="chip" data-value="料金">
+            料金
+          </button>
+
+          <button type="button" class="chip" data-value="新しい友達ができた">
+            新しい友達ができた
+          </button>
+
+          <button type="button" class="chip" data-value="普段できない体験ができた">
+            普段できない体験ができた
+          </button>
+
+          <button type="button" class="chip" data-value="その他">
+            その他
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================================================
+           Q3
+      ====================================================== -->
+
+      <div
+        class="question"
+        data-question="3"
+        data-required="true"
+      >
+
+        <p class="q-eyebrow">
+          Question 03
+        </p>
+
+        <h2 class="q-title">
+          今回参加した<br>
+          理由を教えてください
+        </h2>
+
+        <p class="q-hint">
+          いくつでも選択できます
+        </p>
+
+
+        <div
+          class="chip-group"
+          data-group="reason"
+        >
+
+          <button type="button" class="chip" data-value="友達を作りたかった">
+            友達を作りたかった
+          </button>
+
+          <button type="button" class="chip" data-value="趣味の合う人と出会いたかった">
+            趣味の合う人と出会いたかった
+          </button>
+
+          <button type="button" class="chip" data-value="新しい人と交流したかった">
+            新しい人と交流したかった
+          </button>
+
+          <button type="button" class="chip" data-value="イベント内容に興味があった">
+            イベント内容に興味があった
+          </button>
+
+          <button type="button" class="chip" data-value="Unityに興味があった">
+            Unityに興味があった
+          </button>
+
+          <button type="button" class="chip" data-value="友人・知人からの紹介">
+            友人・知人からの紹介
+          </button>
+
+          <button type="button" class="chip" data-value="SNS・つなげーとなどで見つけた">
+            SNS・つなげーとなどで見つけた
+          </button>
+
+          <button type="button" class="chip" data-value="その他">
+            その他
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================================================
+           Q4
+      ====================================================== -->
+
+      <div
+        class="question"
+        data-question="4"
+        data-required="true"
+      >
+
+        <p class="q-eyebrow">
+          Question 04
+        </p>
+
+        <h2 class="q-title">
+          今後Unityで<br>
+          やってほしいイベントは？
+        </h2>
+
+        <p class="q-hint">
+          いくつでも選択できます
+        </p>
+
+
+        <div
+          class="chip-group"
+          data-group="futureEvents"
+        >
+
+          <button type="button" class="chip" data-value="ボードゲーム">
+            ボードゲーム
+          </button>
+
+          <button type="button" class="chip" data-value="フットサル">
+            フットサル
+          </button>
+
+          <button type="button" class="chip" data-value="ダーツ">
+            ダーツ
+          </button>
+
+          <button type="button" class="chip" data-value="カフェ会">
+            カフェ会
+          </button>
+
+          <button type="button" class="chip" data-value="飲み会・ご飯会">
+            飲み会・ご飯会
+          </button>
+
+          <button type="button" class="chip" data-value="BBQ・アウトドア">
+            BBQ・アウトドア
+          </button>
+
+          <button type="button" class="chip" data-value="旅行・日帰りイベント">
+            旅行・日帰りイベント
+          </button>
+
+          <button type="button" class="chip" data-value="料理・スイーツ作り">
+            料理・スイーツ作り
+          </button>
+
+          <button type="button" class="chip" data-value="季節イベント">
+            季節イベント
+          </button>
+
+          <button type="button" class="chip" data-value="新しい趣味を体験するイベント">
+            新しい趣味を体験するイベント
+          </button>
+
+          <button type="button" class="chip" data-value="その他">
+            その他
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================================================
+           Q5
+      ====================================================== -->
+
+      <div
+        class="question"
+        data-question="5"
+        data-required="false"
+      >
+
+        <p class="q-eyebrow">
+          Question 05
+        </p>
+
+        <h2 class="q-title">
+          Unityをもっと良くするために、<br>
+          意見やご要望があれば教えてください
+        </h2>
+
+        <p class="q-hint">
+          未回答でも進めます
+        </p>
+
+
+        <div class="textarea-wrap">
+
+          <textarea
+            id="free-text"
+            class="free-text"
+            maxlength="500"
+            placeholder="どんな些細なことでも大丈夫です。ご自由にお書きください。"
+            rows="6"
+          ></textarea>
+
+          <span class="textarea-count">
+            <span id="free-text-count">0</span>
+            / 500
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <p
+        class="q-error"
+        id="q-error"
+        role="alert"
+        aria-live="assertive"
+      ></p>
+
+    </div>
+
+
+    <!-- =========================================================
+         Navigation
+    ========================================================== -->
+
+    <footer class="survey-nav">
+
+      <button
+        type="button"
+        class="btn btn-ghost"
+        id="btn-back"
+      >
+        戻る
+      </button>
+
+
+      <button
+        type="button"
+        class="btn btn-primary btn-next"
+        id="btn-next"
+      >
+
+        <span id="btn-next-label">
+          次へ
+        </span>
+
+        <svg
+          class="btn-arrow"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden="true"
+        >
+
+          <path
+            d="M5 12h14M13 6l6 6-6 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+        </svg>
+
+      </button>
+
+    </footer>
+
+  </section>
+
+
+  <!-- =========================================================
+       3. COMPLETE
+  ========================================================== -->
+
+  <section
+    class="screen screen-complete"
+    id="screen-complete"
+  >
+
+    <div class="complete-inner">
+
+      <div
+        class="complete-icon"
+        aria-hidden="true"
+      >
+
+        <svg
+          width="40"
+          height="40"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+
+          <circle
+            cx="12"
+            cy="12"
+            r="11"
+            stroke="currentColor"
+            stroke-width="1.4"
+          />
+
+          <path
+            d="M7 12.5l3 3 7-7"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+
+        </svg>
+
+      </div>
+
+
+      <p class="complete-eyebrow">
+        Thank you!
+      </p>
+
+
+      <h2 class="complete-title">
+        アンケートへの<br>
+        ご協力ありがとうございました。
+      </h2>
+
+
+      <p class="complete-message">
+        いただいた声を、これからのUnityに活かしていきます。
+      </p>
+
+
+      <div
+        class="complete-divider"
+        aria-hidden="true"
+      ></div>
+
+
+      <!-- =====================================================
+           UNITY DROP
+      ====================================================== -->
+
+      <div
+        class="drop-cta"
+        id="drop-cta"
+      >
+
+        <p class="drop-cta-eyebrow">
+          UNITY DROP
+        </p>
+
+
+        <p class="drop-cta-title">
+          イベント参加のお楽しみ！<br>
+          あなたのDROPを開こう。
+        </p>
+
+
+        <a
+          href="https://nyokki519.github.io/Unity-DROP/"
+          class="btn btn-primary drop-cta-btn"
+          target="_blank"
+          rel="noopener"
+        >
+
+          <span>
+            UNITY DROPを開く
+          </span>
+
+          <svg
+            class="btn-arrow"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+
+            <path
+              d="M5 12h14M13 6l6 6-6 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+
+          </svg>
+
+        </a>
+
+      </div>
+
+
+      <div
+        class="complete-divider"
+        aria-hidden="true"
+      ></div>
+
+
+      <div class="brand-mark brand-mark--closing">
+
+        <span
+          class="brand-ring"
+          aria-hidden="true"
+        ></span>
+
+        <h3 class="brand-name brand-name--small">
+          Unity
+        </h3>
+
+      </div>
+
+
+      <p class="brand-tagline brand-tagline--small">
+        一生ものの仲間と、成長する。
+      </p>
+
+    </div>
+
+  </section>
+
+</div>
+
+
+<!-- =========================================================
+     Overlay
+========================================================== -->
+
+<div
+  class="overlay"
+  id="overlay"
+  aria-hidden="true"
+>
+
+  <div class="overlay-card">
+
+    <span
+      class="spinner"
+      aria-hidden="true"
+    ></span>
+
+    <p id="overlay-text">
+      送信しています…
+    </p>
+
+  </div>
+
+</div>
+
+
+<!-- =========================================================
+     Toast
+========================================================== -->
+
+<div
+  class="toast"
+  id="toast"
+  role="alert"
+  aria-live="assertive"
+>
+
+  <p id="toast-text"></p>
+
+  <button
+    type="button"
+    class="toast-retry"
+    id="toast-retry"
+  >
+    再送信する
+  </button>
+
+</div>
+
+
+<!-- =========================================================
+     Google Form hidden iframe
+========================================================== -->
+
+<iframe
+  name="hidden-submit-frame"
+  id="hidden-submit-frame"
+  style="display:none"
+  aria-hidden="true"
+></iframe>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
 
 <!-- 背景の温かみのある質感レイヤー -->
 <div class="bg-texture" aria-hidden="true"></div>
